@@ -1,9 +1,0 @@
-#!/bin/bash
-
-midi = $0
-m3u = $1
-wav = ${midi%.mid}.wav
-m4a = ${midi:%.mid}.m4a
-pianoteq -- preset "Bluethner Model One" --midi midi --wav wav
-exhale 5 wav m4a
-cat m4a >> m3u
