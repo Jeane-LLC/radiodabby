@@ -1,0 +1,15 @@
+*~
+.*
+!.emacs
+!.gitignore
+ffmpeg/
+exhale/
+AviSynthPlus/
+wav/*
+playlists/*
+pianoteq7/*
+libaacplus/*
+kunstderfuge/*
+ices/*
+icecast/*
+
