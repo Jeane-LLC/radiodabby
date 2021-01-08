@@ -11,8 +11,8 @@ from scipy.integrate import solve_ivp
 from numpy import linspace
 from numpy import all as NPAll
 from numpy import array as NPArray
-from music21.midi import MidiFile
 from music21.midi import translate
+from music21.converter import parse
 from music21.stream import Stream
 import argparse
 from unittest import TestSuite
@@ -37,10 +37,20 @@ class TestImports(TestCase):
         return
 
 
-def openMidi(filename: str):
-    midifile = MidiFile.open(filename)
+def openMidiAsStream(filename: str):
+    return parse(filename)
 
-    return midifile
+
+def applyChaoticMapToStream(chaoticMap: tuple, stream: Stream):
+    chaoticStream = stream
+    return chaoticStream
+
+
+def writeStreamToMidi(stream: Stream, filename: str):
+    midiFile = translate.streamToMidiFile(stream)
+    midiFile.open(filename, "wb")
+    midiFile.write()
+    midiFile.close()
 
 
 def lorenzEquations(t, V, sigma, rho, beta):
