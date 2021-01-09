@@ -2,7 +2,7 @@
 chaotic_mapping.py
 Arjun Iyer - Jeane LLC (c) 2021 GPL3
 
-An implementation of Dabby '98
+An implementation of Dabby '95
 
 This script takes a MIDI file, applies a chaotic mapping, and produces a new MIDI file.
 
@@ -14,16 +14,18 @@ from numpy import array as NPArray
 from music21.midi import translate
 from music21.converter import parse
 from music21.stream import Stream
-import argparse
+from music21.variant import Variant
+from argparse import ArgumentParser
 from unittest import TestSuite
 from unittest import TestCase
 from unittest import TextTestRunner
 import sys
 
 # read a midi file
-# run an ode45 for the lorenz attractor
+# run an ode45, l0, for the lorenz attractor with one set of initial conditions
 # map the first 12 notes to the first 12 values of the ode45
-# substitute those notes into the midi file
+# run another ode45, l1, with another set of initial conditions
+# substitute those notes for each index where xi_l0 > xj_l1 
 # write the new midi file with associated metadata
 
 
@@ -61,7 +63,7 @@ def lorenzEquations(t, V, sigma, rho, beta):
     return xDot, yDot, zDot
 
 
-def ivpSolver(tmax: int, tn: int, rho: float, sigma: float, beta: float, V: float):
+def ivpSolver(tmax: int, tn: int, V: float, rho: float, sigma: float, beta: float):
     x0, y0, z0 = V
     lorenz = solve_ivp(
         lorenzEquations,
@@ -81,20 +83,17 @@ class TestLorenz(TestCase):
         self.assertTrue(NPAll(NPArray([x, y, z]) == 0))
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-F", "--filename", help="MIDI file (.mid) to use as input", action="store_true"
-)
-parser.add_argument(
-    "-V", "--version", help="Prints the script version number", action="store_true"
-)
-parser.add_argument(
-    "-T",
-    "--test",
-    help="Runs all tests to check if script will operate as expected",
-    action="store_true",
-)
-
+def dabby(filename: str, lorenz0: tuple, lorenz1: tuple):
+    tmax0, tn0, V0, rho0, sigma0, beta0 = lorenz0
+    tmax1, tn1, V1, rho1, sigma1, beta1 = lorenz1
+    originalStream = openMidiAsStream(filename)
+    lorenz0Values = ivpSolver(tmax0, tn0, V0, rho0, sigma0, beta0)
+    lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
+    lorenz0Xs = [p[0] for p in lorenz0Values]
+    lorenz1Xs = [p[1] for p in lorenz1Values]
+    #X's for pitch, Y for rhythm, Z for dynamics 
+    variant = Variant()
+    originalStream.append(variant)
 
 def testSuite():
     suite = TestSuite()
@@ -110,6 +109,35 @@ def runAllTests():
 
 
 if __name__ == "__main__":
+
+    parser = ArgumentParser()
+    parser.add_argument(
+        "-F", "--filename", help="MIDI file (.mid) to use as input", action="store_true"
+    )
+    parser.add_argument(
+        "-V", "--version", help="Prints the script version number", action="store_true"
+    )
+    parser.add_argument(
+        "-T",
+        "--test",
+        help="Runs all tests to check if script will operate as expected",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "-L0",
+        "--lorenz0",
+        help="Parameters to map to the original midi file",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "-L1",
+        "--lorenz1",
+        help="Parameters to generate the variant midi file",
+        action="store_true",
+    )
+
     args = parser.parse_args()
 
     if args.test:
@@ -118,5 +146,5 @@ if __name__ == "__main__":
     if args.version:
         print("Version " + versionNumberString)
 
-    if args.filename:
-        openMidi(args.filename)
+    if args.filename & args.lorenz0 & args.lorenz1:
+        dabby(args.filename, args.lorenz0, args.lorenz1)
