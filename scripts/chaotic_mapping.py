@@ -7,6 +7,8 @@ An implementation of Dabby '95
 This script takes a MIDI file, applies a chaotic mapping, and produces a new MIDI file.
 
 """
+
+# imports
 from scipy.integrate import solve_ivp
 from numpy import linspace
 from numpy import all as NPAll
@@ -15,6 +17,8 @@ from music21.midi import translate
 from music21.converter import parse
 from music21.stream import Stream
 from music21.variant import Variant
+from music21.note import Note
+from music21.chord import Chord
 from argparse import ArgumentParser
 from unittest import TestSuite
 from unittest import TestCase
@@ -87,6 +91,8 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple):
     tmax0, tn0, V0, rho0, sigma0, beta0 = lorenz0
     tmax1, tn1, V1, rho1, sigma1, beta1 = lorenz1
     originalStream = openMidiAsStream(filename)
+    rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream]
+
     lorenz0Values = ivpSolver(tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
 
@@ -95,9 +101,37 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple):
     lorenz0Xs = [(i, p[0]) for i, p in enumerate(lorenz0Values)]
     lorenz1Xs = [(i, p[0]) for i, p in enumerate(lorenz1Values)]
     lorenz0Xs.sort(key=lambda x: x[1])
+    variationIndices = [mapping(l, lorenz0Xs) for l in lorenz1Xs]
+    # at index j, apply pitch at index i
 
     variant = Variant()
+
+    p = 0
+    for noteOrChord in originalStream:
+        newPitch = rootPitches[variationIndices[p][1]]
+        p += 1
+        if noteOrChord is Note:
+            variant.append()  # a copy of the note with the appropriate pitch
+        elif noteOrChord is Chord:
+            variant.append()  # a copy of the chord transposed by the detla between root & new pitch
     originalStream.append(variant)
+    originalStream.activateVariants()
+    return originalStream
+
+
+def mapping(l: tuple, lorenz0Xs: list):
+    j, x1 = l
+    for i, x0 in lorenz0Xs:
+        if x0 > x1:
+            return (j, i)
+    return (j, j)  # Default return no variation
+
+
+def extractRoot(noteOrChord):
+    if noteOrChord is Note:
+        return noteOrChord.pitch
+    if noteOrChord is Chord:
+        return noteOrChord.root()
 
 
 def testSuite():
