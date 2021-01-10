@@ -25,7 +25,7 @@ import sys
 # run an ode45, l0, for the lorenz attractor with one set of initial conditions
 # map the first 12 notes to the first 12 values of the ode45
 # run another ode45, l1, with another set of initial conditions
-# substitute those notes for each index where xi_l0 > xj_l1 
+# substitute those notes for each index where xi_l0 > xj_l1
 # write the new midi file with associated metadata
 
 
@@ -89,11 +89,16 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple):
     originalStream = openMidiAsStream(filename)
     lorenz0Values = ivpSolver(tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
-    lorenz0Xs = [p[0] for p in lorenz0Values]
-    lorenz1Xs = [p[1] for p in lorenz1Values]
-    #X's for pitch, Y for rhythm, Z for dynamics 
+
+    # X's for pitch, Y for rhythm, Z for dynamics
+
+    lorenz0Xs = [(i, p[0]) for i, p in enumerate(lorenz0Values)]
+    lorenz1Xs = [(i, p[0]) for i, p in enumerate(lorenz1Values)]
+    lorenz0Xs.sort(key=lambda x: x[1])
+
     variant = Variant()
     originalStream.append(variant)
+
 
 def testSuite():
     suite = TestSuite()
