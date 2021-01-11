@@ -1,6 +1,6 @@
 # Radio Dabby
 
-An online radio station playing chaotic variations of classical music
+An online radio station playing chaotic variations of classical music based on ["Musical variations from a chaotic mapping"](https://dspace.mit.edu/bitstream/handle/1721.1/27282/Dabby_Diana_PhD_1995.pdf?sequence=1) by Dr. Diana Dabby
 
 ## Dependencies
 * Chaotic Mapping 
