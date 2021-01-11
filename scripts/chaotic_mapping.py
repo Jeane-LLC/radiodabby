@@ -19,11 +19,14 @@ from music21.stream import Stream
 from music21.variant import Variant
 from music21.note import Note
 from music21.chord import Chord
+from music21.interval import Interval
 from argparse import ArgumentParser
 from unittest import TestSuite
 from unittest import TestCase
 from unittest import TextTestRunner
 import sys
+from copy import deepcopy
+from datetime.datetime import now
 
 # read a midi file
 # run an ode45, l0, for the lorenz attractor with one set of initial conditions
@@ -47,12 +50,8 @@ def openMidiAsStream(filename: str):
     return parse(filename)
 
 
-def applyChaoticMapToStream(chaoticMap: tuple, stream: Stream):
-    chaoticStream = stream
-    return chaoticStream
-
-
-def writeStreamToMidi(stream: Stream, filename: str):
+def writeStreamVariantToMidi(stream: Stream, group: str, filename: str):
+    stream.activateVariants(group)
     midiFile = translate.streamToMidiFile(stream)
     midiFile.open(filename, "wb")
     midiFile.write()
@@ -87,12 +86,13 @@ class TestLorenz(TestCase):
         self.assertTrue(NPAll(NPArray([x, y, z]) == 0))
 
 
-def dabby(filename: str, lorenz0: tuple, lorenz1: tuple):
+def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
     tmax0, tn0, V0, rho0, sigma0, beta0 = lorenz0
     tmax1, tn1, V1, rho1, sigma1, beta1 = lorenz1
     originalStream = openMidiAsStream(filename)
-    rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream]
-
+    rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream.notes]
+    if numberOfPitches == 0:
+        numberOfPitches = len(rootPitches)
     lorenz0Values = ivpSolver(tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
 
@@ -107,15 +107,31 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple):
     variant = Variant()
 
     p = 0
-    for noteOrChord in originalStream:
+    for generalNoteSubclass in originalStream.notesAndRests:
+        if p > numberOfPitches - 1:
+            break
         newPitch = rootPitches[variationIndices[p][1]]
-        p += 1
-        if noteOrChord is Note:
-            variant.append()  # a copy of the note with the appropriate pitch
-        elif noteOrChord is Chord:
-            variant.append()  # a copy of the chord transposed by the detla between root & new pitch
-    originalStream.append(variant)
-    originalStream.activateVariants()
+
+        if generalNoteSubclass.isNote:
+            variantNote = deepcopy(generalNoteSubclass)
+            variantNote.pitch = newPitch
+            variant.append(variantNote)  # a copy of the note with the appropriate pitch
+            p += 1
+        elif generalNoteSubclass.isChord:
+            variantChord = deepcopy(generalNoteSubclass)
+            midiTransposeInterval = Interval(
+                variantChord.root.pitch.midi - newPitch.midi
+            )
+            variantChord.transpose(midiTransposeInterval)
+            variant.append(
+                variantChord
+            )  # a copy of the chord transposed by the detla between root & new pitch
+            p += 1
+        elif generalNoteSubclass.isRest:
+            variant.append(generalNoteSubclass)
+
+    variant.groups = ["dabby"]
+    originalStream.insert(0.0, variant)
     return originalStream
 
 
@@ -177,6 +193,13 @@ if __name__ == "__main__":
         action="store_true",
     )
 
+    parser.add_argument(
+        "-M",
+        "--mapping",
+        help="The name of the mapping strategy to apply",
+        action="store_true",
+    )
+
     args = parser.parse_args()
 
     if args.test:
@@ -185,5 +208,11 @@ if __name__ == "__main__":
     if args.version:
         print("Version " + versionNumberString)
 
-    if args.filename & args.lorenz0 & args.lorenz1:
-        dabby(args.filename, args.lorenz0, args.lorenz1)
+    if args.filename & args.lorenz0 & args.lorenz1 & args.mapping:
+        if args.mapping == "dabby":
+            stream = dabby(args.filename, args.lorenz0, args.lorenz1)
+            newFilename = args.filename.replace(
+                ".mid", "_dabby" + "_" + now.strftime("%m%d%Y%H%M%S") + ".mid"
+            )
+            writeStreamVariantToMidi(stream, "dabby", newFilename)
+            print("wrote " + newFilename)
