@@ -27,6 +27,8 @@ from unittest import TextTestRunner
 import sys
 from copy import deepcopy
 from datetime.datetime import now
+from os.path import split
+from pathlib.Path import home
 
 # read a midi file
 # run an ode45, l0, for the lorenz attractor with one set of initial conditions
@@ -37,6 +39,7 @@ from datetime.datetime import now
 
 
 versionNumberString = "0.0.0"
+homeDir = str(home())
 
 
 class TestImports(TestCase):
@@ -87,8 +90,10 @@ class TestLorenz(TestCase):
 
 
 def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
-    tmax0, tn0, V0, rho0, sigma0, beta0 = lorenz0
-    tmax1, tn1, V1, rho1, sigma1, beta1 = lorenz1
+    tmax0, tn0, x0, y0, z0, rho0, sigma0, beta0 = lorenz0
+    tmax1, tn1, x1, y1, z1, rho1, sigma1, beta1 = lorenz1
+    V0 = (x0, y0, z0)
+    V1 = (x1, y1, z1)
     originalStream = openMidiAsStream(filename)
     rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream.notes]
     if numberOfPitches == 0:
@@ -210,9 +215,13 @@ if __name__ == "__main__":
 
     if args.filename & args.lorenz0 & args.lorenz1 & args.mapping:
         if args.mapping == "dabby":
-            stream = dabby(args.filename, args.lorenz0, args.lorenz1)
-            newFilename = args.filename.replace(
-                ".mid", "_dabby" + "_" + now.strftime("%m%d%Y%H%M%S") + ".mid"
+            stream = dabby(args.filename, tuple(args.lorenz0), tuple(args.lorenz1))
+            newFilename = (
+                homeDir
+                + "/variants/"
+                + split(args.filename)[1].replace(
+                    ".mid", "_dabby" + "_" + now.strftime("%m%d%Y%H%M%S") + ".mid"
+                )
             )
             writeStreamVariantToMidi(stream, "dabby", newFilename)
             print("wrote " + newFilename)
