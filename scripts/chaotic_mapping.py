@@ -89,15 +89,10 @@ class TestLorenz(TestCase):
         self.assertTrue(NPAll(NPArray([x, y, z]) == 0))
 
 
-def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
-    tmax0, tn0, x0, y0, z0, rho0, sigma0, beta0 = lorenz0
-    tmax1, tn1, x1, y1, z1, rho1, sigma1, beta1 = lorenz1
-    V0 = (x0, y0, z0)
-    V1 = (x1, y1, z1)
-    originalStream = openMidiAsStream(filename)
-    rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream.notes]
-    if numberOfPitches == 0:
-        numberOfPitches = len(rootPitches)
+def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
+    tmax0, tn0, V0, rho0, sigma0, beta0 = lorenz0Vars
+    tmax1, tn1, V1, rho1, sigma1, beta1 = lorenz1Vars
+
     lorenz0Values = ivpSolver(tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
 
@@ -106,9 +101,22 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
     lorenz0Xs = [(i, p[0]) for i, p in enumerate(lorenz0Values)]
     lorenz1Xs = [(i, p[0]) for i, p in enumerate(lorenz1Values)]
     lorenz0Xs.sort(key=lambda x: x[1])
-    variationIndices = [mapping(l, lorenz0Xs) for l in lorenz1Xs]
-    # at index j, apply pitch at index i
+    return [mapping(l, lorenz0Xs) for l in lorenz1Xs]
 
+
+def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
+    tmax0, tn0, x0, y0, z0, rho0, sigma0, beta0 = lorenz0
+    tmax1, tn1, x1, y1, z1, rho1, sigma1, beta1 = lorenz1
+    V0 = (x0, y0, z0)
+    V1 = (x1, y1, z1)
+    originalStream = openMidiAsStream(filename)
+    rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream.notes]
+    lorenz0Vars = (tmax0, tn0, V0, rho0, sigma0, beta0)
+    lorenz1Vars = (tmax1, tn1, V1, rho1, sigma1, beta1)
+    if numberOfPitches == 0:
+        numberOfPitches = len(rootPitches)
+    # at index j, apply pitch at index i
+    variationIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
     variant = Variant()
 
     p = 0
