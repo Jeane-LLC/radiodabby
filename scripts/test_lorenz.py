@@ -5,6 +5,6 @@ from chaotic_mapping import ivpSolver
 
 
 class TestLorenz(TestCase):
-    def test_lorenz(self):
+    def test_null_lorenz(self):
         x, y, z = ivpSolver(100, 1000, (0.0, 0.0, 0.0), 0.0, 0.0, 0.0)
-        self.assertTrue(NPAll(NPArray([x, y, z]) == 0))
+        self.assertTrue(NPAll(NPArray([x, y, z]) == 0)

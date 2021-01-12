@@ -81,7 +81,7 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
     lorenz0Xs = [(i, p) for i, p in enumerate(lorenz0Values[0])]
     lorenz1Xs = [(i, p) for i, p in enumerate(lorenz1Values[0])]
     lorenz0Xs.sort(key=lambda x: x[1])
-    return [mapping(l, lorenz0Xs) for l in lorenz1Xs]
+    return [getFirstGreaterValue(l, lorenz0Xs) for l in lorenz1Xs]
 
 
 def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
@@ -128,7 +128,7 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
     return originalStream
 
 
-def mapping(l: tuple, lorenz0Xs: list):
+def getFirstGreaterValue(l: tuple, lorenz0Xs: list):
     j, x1 = l
     for i, x0 in lorenz0Xs:
         if x0 > x1:
