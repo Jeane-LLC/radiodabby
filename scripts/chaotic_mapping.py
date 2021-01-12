@@ -11,8 +11,6 @@ This script takes a MIDI file, applies a chaotic mapping, and produces a new MID
 # imports
 from scipy.integrate import solve_ivp
 from numpy import linspace
-from numpy import all as NPAll
-from numpy import array as NPArray
 from music21.midi import translate
 from music21.converter import parse
 from music21.stream import Stream
@@ -21,10 +19,6 @@ from music21.note import Note
 from music21.chord import Chord
 from music21.interval import Interval
 from argparse import ArgumentParser
-from unittest import TestSuite
-from unittest import TestCase
-from unittest import TextTestRunner
-import sys
 from copy import deepcopy
 from datetime import datetime
 from os.path import split
@@ -40,13 +34,6 @@ from pathlib import Path
 
 versionNumberString = "0.0.0"
 homeDir = str(Path.home())
-
-
-class TestImports(TestCase):
-    def test_import(self):
-        self.assertTrue("scipy.integrate" in sys.modules)
-        self.assertTrue("music21.midi" in sys.modules)
-        return
 
 
 def openMidiAsStream(filename: str):
@@ -81,12 +68,6 @@ def ivpSolver(tmax: int, tn: int, V: float, rho: float, sigma: float, beta: floa
     t = linspace(0, tmax, tn)
     x, y, z = lorenz.sol(t)
     return x, y, z
-
-
-class TestLorenz(TestCase):
-    def test_lorenz(self):
-        x, y, z = ivpSolver(100, 1000, 0.0, 0.0, 0.0, (0.0, 0.0, 0.0))
-        self.assertTrue(NPAll(NPArray([x, y, z]) == 0))
 
 
 def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
@@ -162,19 +143,6 @@ def extractRoot(noteOrChord):
         return noteOrChord.root()
 
 
-def testSuite():
-    suite = TestSuite()
-    suite.addTest(TestImports("test_import"))
-    suite.addTest(TestLorenz("test_lorenz"))
-    return suite
-
-
-def runAllTests():
-    runner = TextTestRunner()
-    runner.run(testSuite())
-    return
-
-
 if __name__ == "__main__":
 
     parser = ArgumentParser()
@@ -183,12 +151,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-V", "--version", help="Prints the script version number", action="store_true"
-    )
-    parser.add_argument(
-        "-T",
-        "--test",
-        help="Runs all tests to check if script will operate as expected",
-        action="store_true",
     )
 
     parser.add_argument(
@@ -213,9 +175,6 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    if args.test:
-        runAllTests()
 
     if args.version:
         print("Version " + versionNumberString)
