@@ -26,9 +26,9 @@ from unittest import TestCase
 from unittest import TextTestRunner
 import sys
 from copy import deepcopy
-from datetime.datetime import now
+from datetime import datetime
 from os.path import split
-from pathlib.Path import home
+from pathlib import Path
 
 # read a midi file
 # run an ode45, l0, for the lorenz attractor with one set of initial conditions
@@ -39,7 +39,7 @@ from pathlib.Path import home
 
 
 versionNumberString = "0.0.0"
-homeDir = str(home())
+homeDir = str(Path.home())
 
 
 class TestImports(TestCase):
@@ -97,9 +97,8 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
 
     # X's for pitch, Y for rhythm, Z for dynamics
-
-    lorenz0Xs = [(i, p[0]) for i, p in enumerate(lorenz0Values)]
-    lorenz1Xs = [(i, p[0]) for i, p in enumerate(lorenz1Values)]
+    lorenz0Xs = [(i, p) for i, p in enumerate(lorenz0Values[0])]
+    lorenz1Xs = [(i, p) for i, p in enumerate(lorenz1Values[0])]
     lorenz0Xs.sort(key=lambda x: x[1])
     return [mapping(l, lorenz0Xs) for l in lorenz1Xs]
 
@@ -228,7 +227,8 @@ if __name__ == "__main__":
                 homeDir
                 + "/variants/"
                 + split(args.filename)[1].replace(
-                    ".mid", "_dabby" + "_" + now.strftime("%m%d%Y%H%M%S") + ".mid"
+                    ".mid",
+                    "_dabby" + "_" + datetime.now().strftime("%m%d%Y%H%M%S") + ".mid",
                 )
             )
             writeStreamVariantToMidi(stream, "dabby", newFilename)

@@ -1,5 +1,6 @@
 *~
 .*
+scripts/__pycache__
 !.emacs
 !.gitignore
 ffmpeg/
