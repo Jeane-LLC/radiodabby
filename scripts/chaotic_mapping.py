@@ -9,6 +9,7 @@ This script takes a MIDI file, applies a chaotic mapping, and produces a new MID
 """
 
 # imports
+from bisect import bisect_right
 from scipy.integrate import solve_ivp
 from numpy import linspace
 from music21.midi import translate
@@ -78,9 +79,11 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
 
     # X's for pitch, Y for rhythm, Z for dynamics
-    lorenz0Xs = [(i, p) for i, p in enumerate(lorenz0Values[0])]
+    # lorenz0Xs = [(i, p) for i, p in enumerate(lorenz0Values[0])]
     lorenz1Xs = [(i, p) for i, p in enumerate(lorenz1Values[0])]
-    lorenz0Xs.sort(key=lambda x: x[1])
+    # lorenz0Xs.sort(key=lambda x: x[1])
+    lorenz0Xs = lorenz0Values[0]
+    lorenz0Xs.sort()
     return [getFirstGreaterValue(l, lorenz0Xs) for l in lorenz1Xs]
 
 
@@ -130,9 +133,10 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
 
 def getFirstGreaterValue(l: tuple, lorenz0Xs: list):
     j, x1 = l
-    for i, x0 in lorenz0Xs:
-        if x0 > x1:
-            return (j, i)
+
+    index = bisect_right(lorenz0Xs, x1)
+    if index < len(lorenz0Xs):
+        return (j, index)
     return (j, j)  # Default return no variation
 
 
