@@ -8,9 +8,11 @@ class TestMusic21(TestCase):
     def test_midi_to_stream(self):
         midiFilename = "~/kunstderfuge/satie/satie_gnossienne_1_(c)dery.mid"
         stream = parse(midiFilename)
-        stream.show('text')
+        # stream.show('text')
         for part in stream.parts:
-            
-            for voice in stream.voices:
+            # part.show("text")
+            print("There are " + str(len(part.voices)) + " voices")
+            for voice in part.voices:
+                voice.notesAndRests.stream().show("text")
                 pass
         self.assertFalse(stream.isFlat)
