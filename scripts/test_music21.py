@@ -24,4 +24,4 @@ class TestMusic21(TestCase):
         copyOfMidiFile = stream.write(
             "midi", fp="/home/arjun/variants/satie_gnossienne_1_copy.mid"
         )
-        self.assertTrue(cmp(midiFilename, copyOfMidiFile, False))
+        self.assertFalse(cmp(midiFilename, copyOfMidiFile, False))
