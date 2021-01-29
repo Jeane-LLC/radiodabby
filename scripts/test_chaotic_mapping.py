@@ -3,6 +3,9 @@ from chaotic_mapping import getChaoticMapIndices
 
 
 class TestChaoticMapping(TestCase):
+    def test_dabby95(self):
+        pass
+
     def test_chaos_map(self):
         def greaterThanFilter(pair):
             return pair[0] != pair[1]
