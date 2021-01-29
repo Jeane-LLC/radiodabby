@@ -1,6 +1,6 @@
 """
 chaotic_mapping.py
-Arjun Iyer - Jeane LLC (c) 2021 GPL3
+Arjun Iyer - Jeane LLC (c) 2021 AGPL3
 
 An implementation of Dabby '95
 
@@ -87,47 +87,58 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
     return [getFirstGreaterValue(l, lorenz0Xs) for l in lorenz1Xs]
 
 
+def generateVariantForVoice(stream, voiceIndex, variationIndices, numberOfPitches):
+    for part in stream.parts:
+        voice = part.voices[voiceIndex]
+        rootPitches = [extractRoot(noteOrChord) for noteOrChord in voice.notes]
+        variant = Variant()
+        p = 0
+        for generalNoteSubclass in voice.notesAndRests:
+            if p > numberOfPitches - 1:
+                break
+            newPitch = rootPitches[variationIndices[p][1]]
+
+            if generalNoteSubclass.isNote:
+                variantNote = deepcopy(generalNoteSubclass)
+                variantNote.pitch = newPitch
+                variant.append(
+                    variantNote
+                )  # a copy of the note with the appropriate pitch
+                p += 1
+            elif generalNoteSubclass.isChord:
+                variantChord = deepcopy(generalNoteSubclass)
+                midiTransposeInterval = Interval(
+                    variantChord.root.pitch.midi - newPitch.midi
+                )
+                variantChord.transpose(midiTransposeInterval)
+                variant.append(
+                    variantChord
+                )  # a copy of the chord transposed by the detla between root & new pitch
+                p += 1
+            elif generalNoteSubclass.isRest:
+                variant.append(generalNoteSubclass)
+
+        variant.groups = ["dabby"]
+        originalStream.insert(0.0, variant)
+
+
 def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
     tmax0, tn0, x0, y0, z0, rho0, sigma0, beta0 = lorenz0
     tmax1, tn1, x1, y1, z1, rho1, sigma1, beta1 = lorenz1
     V0 = (x0, y0, z0)
     V1 = (x1, y1, z1)
     originalStream = openMidiAsStream(filename)
-    rootPitches = [extractRoot(noteOrChord) for noteOrChord in originalStream.notes]
+
     lorenz0Vars = (tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Vars = (tmax1, tn1, V1, rho1, sigma1, beta1)
-    if numberOfPitches == 0:
-        numberOfPitches = len(rootPitches)
     # at index j, apply pitch at index i
     variationIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
-    variant = Variant()
-
-    p = 0
-    for generalNoteSubclass in originalStream.notesAndRests:
-        if p > numberOfPitches - 1:
-            break
-        newPitch = rootPitches[variationIndices[p][1]]
-
-        if generalNoteSubclass.isNote:
-            variantNote = deepcopy(generalNoteSubclass)
-            variantNote.pitch = newPitch
-            variant.append(variantNote)  # a copy of the note with the appropriate pitch
-            p += 1
-        elif generalNoteSubclass.isChord:
-            variantChord = deepcopy(generalNoteSubclass)
-            midiTransposeInterval = Interval(
-                variantChord.root.pitch.midi - newPitch.midi
-            )
-            variantChord.transpose(midiTransposeInterval)
-            variant.append(
-                variantChord
-            )  # a copy of the chord transposed by the detla between root & new pitch
-            p += 1
-        elif generalNoteSubclass.isRest:
-            variant.append(generalNoteSubclass)
-
-    variant.groups = ["dabby"]
-    originalStream.insert(0.0, variant)
+    leftHandVariant = generateVariantForVoice(
+        originalStream, 0, variationIndices, numberOfPitches
+    )
+    rightHandVariant = generateVariantForVoice(
+        originalStream, 1, variationIndices, numberOfPitches
+    )
     return originalStream
 
 
