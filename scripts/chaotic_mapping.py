@@ -9,6 +9,8 @@ This script takes a MIDI file, applies a chaotic mapping, and produces a new MID
 """
 
 # imports
+from music21.stream import Part
+from music21.stream import Voice
 from bisect import bisect_right
 from scipy.integrate import solve_ivp
 from numpy import linspace
@@ -87,11 +89,18 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
     return [getFirstGreaterValue(l, lorenz0Xs) for l in lorenz1Xs]
 
 
-def generateVariantForVoice(stream, voiceIndex, variationIndices, numberOfPitches):
+def intervalBetween(variantChord, newPitch):
+    return Interval(variantChord.root.pitch.midi - newPitch.midi)
+
+
+def generateVariantPartAndVoice(
+    stream, variant, voiceIndex, variationIndices, numberOfPitches
+):
     for part in stream.parts:
         voice = part.voices[voiceIndex]
         rootPitches = [extractRoot(noteOrChord) for noteOrChord in voice.notes]
-        variant = Variant()
+        variantPart = Part()
+        variantVoice = Voice()
         p = 0
         for generalNoteSubclass in voice.notesAndRests:
             if p > numberOfPitches - 1:
@@ -101,25 +110,20 @@ def generateVariantForVoice(stream, voiceIndex, variationIndices, numberOfPitche
             if generalNoteSubclass.isNote:
                 variantNote = deepcopy(generalNoteSubclass)
                 variantNote.pitch = newPitch
-                variant.append(
+                variantVoice.append(
                     variantNote
                 )  # a copy of the note with the appropriate pitch
                 p += 1
             elif generalNoteSubclass.isChord:
                 variantChord = deepcopy(generalNoteSubclass)
-                midiTransposeInterval = Interval(
-                    variantChord.root.pitch.midi - newPitch.midi
-                )
+                midiTransposeInterval = intervalBetween(variantChord, newPitch)
                 variantChord.transpose(midiTransposeInterval)
-                variant.append(
-                    variantChord
-                )  # a copy of the chord transposed by the detla between root & new pitch
+                variantVoice.append(variantChord)
                 p += 1
             elif generalNoteSubclass.isRest:
-                variant.append(generalNoteSubclass)
-
-        variant.groups = ["dabby"]
-        originalStream.insert(0.0, variant)
+                variantVoice.append(generalNoteSubclass)
+        variantPart.append(variantVoice)
+        variant.append(variantPart)
 
 
 def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
@@ -133,12 +137,16 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
     lorenz1Vars = (tmax1, tn1, V1, rho1, sigma1, beta1)
     # at index j, apply pitch at index i
     variationIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
-    leftHandVariant = generateVariantForVoice(
-        originalStream, 0, variationIndices, numberOfPitches
+    variant = Variant()
+    generateVariantPartAndVoice(
+        originalStream, variant, 0, variationIndices, numberOfPitches
     )
-    rightHandVariant = generateVariantForVoice(
-        originalStream, 1, variationIndices, numberOfPitches
+    generateVariantPartAndVoice(
+        originalStream, variant, 1, variationIndices, numberOfPitches
     )
+    variant.groups = ["dabby"]
+    stream.insert(0.0, variant)
+
     return originalStream
 
 

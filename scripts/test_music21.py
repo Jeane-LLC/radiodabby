@@ -1,12 +1,13 @@
 from unittest import TestCase
-from music21.stream import Stream
 from music21.converter import parse
-from music21.midi.translate import streamToMidiFile
 from filecmp import cmp
 from random import sample
-from os import listdir, path
 from glob import glob
 from pathlib import Path
+from chaotic_mapping import intervalBetween
+from music21.note import Note, Chord
+from music21.pitch import Pitch
+from music21.stream import Stream, Voice, Part, Variant
 
 # imports
 
@@ -14,6 +15,44 @@ home = str(Path.home())
 
 
 class TestMusic21(TestCase):
+    def test_activate_variant_tree(self):
+        s1 = Stream()
+        p1 = Part()
+        v1 = Voice()
+        v1.repeatAppend(Note("C#4"))
+        p1.append(v1)
+        s1.append(p1)
+        var1 = Variant()
+        varP1 = Part()
+        varV1 = Voice()
+        varV1.repeatAppend(Note("D"))
+        varP1.append(varV1)
+        var1.append(varP1)
+        var1.groups = ["test"]
+        s1.insert(0.0, var1)
+        s1.activateVariants("test")
+        for note in s1.parts[0].voices[0].notes:
+            self.assertTrue(note.name == "D")
+
+    def test_null_transpose(self):
+        variantChord = Chord(["D", "F#", "A"])
+        newPitch = Pitch("D-3")
+        chordTransposeInterval = intervalBetween(variantChord, newPitch)
+        print(chordTransposeInterval.name)
+        self.assertTrue(chordTransposeInterval.name == "0")
+
+    def test_octave_transpose(self):
+        variantChord = Chord(["D", "F#", "A"])
+        newPitch = Pitch("D-4")
+        chordTransposeInterval = intervalBetween(variantChord, newPitch)
+        print(chordTransposeInterval.name)
+        self.assertTrue(chordTransposeInterval.name == "P8")
+
+    def test_chord_root(self):
+        variantChord = Chord(["D", "F#", "A"])
+        print(variantChord.root.pitch)
+        self.assertTrue(variantChord.root.pitch == "D")
+
     def streamAnalysis(self, midiFilename):
         stream = parse(midiFilename)
         # stream.show('text')
