@@ -44,8 +44,8 @@ def openMidiAsStream(filename: str):
 
 
 def writeStreamVariantToMidi(stream: Stream, group: str, filename: str):
-    stream.activateVariants(group)
-    midiFile = translate.streamToMidiFile(stream)
+    variantStream = stream.activateVariants(group)
+    midiFile = translate.streamToMidiFile(variantStream)
     midiFile.open(filename, "wb")
     midiFile.write()
     midiFile.close()
@@ -94,17 +94,16 @@ def intervalBetween(variantChord, newPitch):
 
 
 def generateVariantPartAndVoice(
-    stream, variant, voiceIndex, variationIndices, numberOfPitches
+    score, variant, voiceIndex, variationIndices, numberOfPitches
 ):
-    for part in stream.parts:
+    for part in score.parts:
         voice = part.voices[voiceIndex]
         rootPitches = [extractRoot(noteOrChord) for noteOrChord in voice.notes]
-        variantPart = Part()
         variantVoice = Voice()
         p = 0
         for generalNoteSubclass in voice.notesAndRests:
             if p > numberOfPitches - 1:
-                break
+                p = 0
             newPitch = rootPitches[variationIndices[p][1]]
 
             if generalNoteSubclass.isNote:
@@ -122,8 +121,19 @@ def generateVariantPartAndVoice(
                 p += 1
             elif generalNoteSubclass.isRest:
                 variantVoice.append(generalNoteSubclass)
-        variantPart.append(variantVoice)
+        variantPart = Part([variantVoice])
         variant.append(variantPart)
+
+
+def solveIVPAndGenerateVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group):
+    # at index j, apply pitch at index i
+    variationIndices = getChaoticMapIndices(ivp0Vars, ivp1Vars)
+    variant = Variant()
+    generateVariantPartAndVoice(score, variant, 0, variationIndices, numberOfPitches)
+    generateVariantPartAndVoice(score, variant, 1, variationIndices, numberOfPitches)
+    variant.groups = [group]
+    score.insert(0.0, variant)
+    return score
 
 
 def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
@@ -132,22 +142,12 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
     V0 = (x0, y0, z0)
     V1 = (x1, y1, z1)
     originalStream = openMidiAsStream(filename)
-
     lorenz0Vars = (tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Vars = (tmax1, tn1, V1, rho1, sigma1, beta1)
-    # at index j, apply pitch at index i
-    variationIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
-    variant = Variant()
-    generateVariantPartAndVoice(
-        originalStream, variant, 0, variationIndices, numberOfPitches
-    )
-    generateVariantPartAndVoice(
-        originalStream, variant, 1, variationIndices, numberOfPitches
-    )
-    variant.groups = ["dabby"]
-    stream.insert(0.0, variant)
 
-    return originalStream
+    return solveIVPAndGenerateVariant(
+        lorenz0Vars, lorenz1Vars, numberOfPitches, originalStream, "dabby"
+    )
 
 
 def getFirstGreaterValue(l: tuple, lorenz0Xs: list):

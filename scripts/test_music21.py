@@ -55,6 +55,13 @@ class TestMusic21(TestCase):
         print(chordTransposeInterval.name)
         self.assertTrue(chordTransposeInterval.name == "P8")
 
+    def test_accidental_transpose(self):
+        f = Pitch("F4")
+        fSharp = Pitch("F#4")
+        accidentalInterval = Interval(f, fSharp)
+        print("accidentalInterval.name", accidentalInterval.name)
+        self.assertTrue(accidentalInterval.name == "A1")
+
     def test_chord_root(self):
         variantChord = Chord(["D", "F#", "A"])
         print("variantChord.root()", variantChord.root())
