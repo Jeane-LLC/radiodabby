@@ -81,9 +81,7 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
     lorenz1Values = ivpSolver(tmax1, tn1, V1, rho1, sigma1, beta1)
 
     # X's for pitch, Y for rhythm, Z for dynamics
-    # lorenz0Xs = [(i, p) for i, p in enumerate(lorenz0Values[0])]
     lorenz1Xs = [(i, p) for i, p in enumerate(lorenz1Values[0])]
-    # lorenz0Xs.sort(key=lambda x: x[1])
     lorenz0Xs = lorenz0Values[0]
     lorenz0Xs.sort()
     return [getFirstGreaterValue(l, lorenz0Xs) for l in lorenz1Xs]
@@ -93,14 +91,19 @@ def intervalBetween(variantChord, newPitch):
     return Interval(variantChord.root().midi - newPitch.midi)
 
 
+def roots(voice):
+    return [extractRoot(noteOrChord) for noteOrChord in voice.notes]
+
+
 def generateVariantPartAndVoice(
     score, variant, voiceIndex, variationIndices, numberOfPitches
 ):
     for part in score.parts:
         voice = part.voices[voiceIndex]
-        rootPitches = [extractRoot(noteOrChord) for noteOrChord in voice.notes]
+        rootPitches = roots(voice)
         variantVoice = Voice()
         p = 0
+
         for generalNoteSubclass in voice.notesAndRests:
             if p > numberOfPitches - 1:
                 p = 0
@@ -125,12 +128,21 @@ def generateVariantPartAndVoice(
         variant.append(variantPart)
 
 
+def greaterThanFilter(pair):
+    return pair[0] != pair[1]
+
+
 def solveIVPAndGenerateVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group):
     # at index j, apply pitch at index i
-    variationIndices = getChaoticMapIndices(ivp0Vars, ivp1Vars)
+    chaoticMapIndices = getChaoticMapIndices(ivp0Vars, ivp1Vars)
+    validChaoticMapIndices = list(filter(greaterThanFilter, chaoticMapIndices))
     variant = Variant()
-    generateVariantPartAndVoice(score, variant, 0, variationIndices, numberOfPitches)
-    generateVariantPartAndVoice(score, variant, 1, variationIndices, numberOfPitches)
+    generateVariantPartAndVoice(
+        score, variant, 0, validChaoticMapIndices, numberOfPitches
+    )
+    generateVariantPartAndVoice(
+        score, variant, 1, validChaoticMapIndices, numberOfPitches
+    )
     variant.groups = [group]
     score.insert(0.0, variant)
     return score
