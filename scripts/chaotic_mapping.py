@@ -90,7 +90,7 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
 
 
 def intervalBetween(variantChord, newPitch):
-    return Interval(variantChord.root.pitch.midi - newPitch.midi)
+    return Interval(variantChord.root().midi - newPitch.midi)
 
 
 def generateVariantPartAndVoice(

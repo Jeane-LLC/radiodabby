@@ -5,9 +5,12 @@ from random import sample
 from glob import glob
 from pathlib import Path
 from chaotic_mapping import intervalBetween
-from music21.note import Note, Chord
+from music21.note import Note
+from music21.chord import Chord
 from music21.pitch import Pitch
-from music21.stream import Stream, Voice, Part, Variant
+from music21.stream import Voice, Part, Score
+from music21.variant import Variant
+from music21.interval import Interval
 
 # imports
 
@@ -16,42 +19,46 @@ home = str(Path.home())
 
 class TestMusic21(TestCase):
     def test_activate_variant_tree(self):
-        s1 = Stream()
-        p1 = Part()
         v1 = Voice()
-        v1.repeatAppend(Note("C#4"))
-        p1.append(v1)
-        s1.append(p1)
-        var1 = Variant()
-        varP1 = Part()
+        v1.repeatAppend(Note("C#4", type="eighth"), 10)
+        p1 = Part([v1])
+        sc1 = Score([p1])
         varV1 = Voice()
-        varV1.repeatAppend(Note("D"))
-        varP1.append(varV1)
-        var1.append(varP1)
+        varV1.repeatAppend(Note("D", type="eighth"), 10)
+        varP1 = Part([varV1])
+        var1 = Variant([varP1])
         var1.groups = ["test"]
-        s1.insert(0.0, var1)
-        s1.activateVariants("test")
-        for note in s1.parts[0].voices[0].notes:
+        sc1.insert(0.0, var1)
+        sc2 = sc1.activateVariants("test")
+        sc1.show("text")
+        sc2.show("text")
+        for note in sc2.parts[0].voices[0].notes:
             self.assertTrue(note.name == "D")
 
-    def test_null_transpose(self):
+    def test_null_transpose_note(self):
+        pitch = Pitch("D4")
+        nullInterval = Interval(pitch, pitch)
+        print("nullInterval.name ", nullInterval.name)
+        self.assertTrue(nullInterval.name == "P1")
+
+    def test_null_transpose_chord(self):
         variantChord = Chord(["D", "F#", "A"])
-        newPitch = Pitch("D-3")
+        newPitch = Pitch("D4")
         chordTransposeInterval = intervalBetween(variantChord, newPitch)
-        print(chordTransposeInterval.name)
-        self.assertTrue(chordTransposeInterval.name == "0")
+        print("chordTransposeInterval.name ", chordTransposeInterval.name)
+        self.assertTrue(chordTransposeInterval.name == "P1")
 
     def test_octave_transpose(self):
         variantChord = Chord(["D", "F#", "A"])
-        newPitch = Pitch("D-4")
+        newPitch = Pitch("D5")
         chordTransposeInterval = intervalBetween(variantChord, newPitch)
         print(chordTransposeInterval.name)
         self.assertTrue(chordTransposeInterval.name == "P8")
 
     def test_chord_root(self):
         variantChord = Chord(["D", "F#", "A"])
-        print(variantChord.root.pitch)
-        self.assertTrue(variantChord.root.pitch == "D")
+        print("variantChord.root()", variantChord.root())
+        self.assertTrue(variantChord.root().name == "D")
 
     def streamAnalysis(self, midiFilename):
         stream = parse(midiFilename)
