@@ -28,13 +28,14 @@ class TestChaoticMapping(TestCase):
     def test_chaos_map(self):
         chaoticMapIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
         validChaoticMapIndices = list(filter(greaterThanFilter, chaoticMapIndices))
+        print(chaoticMapIndices)
         print(validChaoticMapIndices)
-        print("There are ~" + str(len(validChaoticMapIndices)) + " valid indices")
+        print("There are ~" + str(len(validChaoticMapIndices)) + " variation indices")
         self.assertFalse(len(validChaoticMapIndices) == 0)
 
     def test_null_chaos_map(self):
         chaoticMapIndices = getChaoticMapIndices(nullLorenzVars, lorenz0Vars)
         validChaoticMapIndices = list(filter(greaterThanFilter, chaoticMapIndices))
         print(validChaoticMapIndices)
-        print("There are ~" + str(len(validChaoticMapIndices)) + " valid indices")
+        print("There are ~" + str(len(validChaoticMapIndices)) + " variation indices")
         self.assertTrue(len(validChaoticMapIndices) == 0)

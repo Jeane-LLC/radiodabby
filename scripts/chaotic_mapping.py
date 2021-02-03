@@ -82,8 +82,8 @@ def getChaoticMapIndices(lorenz0Vars, lorenz1Vars):
 
     # X's for pitch, Y for rhythm, Z for dynamics
     lorenz1Xs = [(i, p) for i, p in enumerate(lorenz1Values[0])]
-    lorenz0Xs = lorenz0Values[0]
-    lorenz0Xs.sort()
+    enumeratedLorenz0Xs = enumerate(lorenz0Values[0])
+    lorenz0Xs = sorted(enumeratedLorenz0Xs, key=lambda pair: pair[1])
     return [getFirstGreaterValue(l, lorenz0Xs) for l in lorenz1Xs]
 
 
@@ -164,10 +164,12 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
 
 def getFirstGreaterValue(l: tuple, lorenz0Xs: list):
     j, x1 = l
-
-    index = bisect_right(lorenz0Xs, x1)
-    if index < len(lorenz0Xs):
-        return (j, index)
+    xValues = [x0 for _, x0 in lorenz0Xs]
+    index = bisect_right(xValues, x1)
+    if index - 1 > 0 and lorenz0Xs[index - 1][1] == x1:
+        return (j, j)
+    if index < len(lorenz0Xs) - 1:
+        return (j, lorenz0Xs[index][0])
     return (j, j)  # Default return no variation
 
 
