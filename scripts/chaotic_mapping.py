@@ -104,17 +104,23 @@ def generateVariantPartAndVoice(
         for generalNoteSubclass in voice.notesAndRests:
             if p > numberOfPitches - 1:
                 p = 0
-            newPitch = rootPitches[variationIndices[p][1]]
+            if variationIndices[p][1] < len(rootPitches):
+                newPitch = rootPitches[variationIndices[p][1]]
+                variation = True
+            else:
+                variation = False
             if generalNoteSubclass.isNote:
                 variantNote = deepcopy(generalNoteSubclass)
-                variantNote.pitch = newPitch
+                if variation:
+                    variantNote.pitch = newPitch
                 variantVoice.append(
                     variantNote
                 )  # a copy of the note with the appropriate pitch
                 p += 1
             elif generalNoteSubclass.isChord:
                 midiTransposeInterval = intervalBetween(generalNoteSubclass, newPitch)
-                variantChord = generalNoteSubclass.transpose(midiTransposeInterval)
+                if variation:
+                    variantChord = generalNoteSubclass.transpose(midiTransposeInterval)
                 variantVoice.append(variantChord)
                 p += 1
             elif generalNoteSubclass.isRest:
