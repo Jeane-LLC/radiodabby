@@ -18,8 +18,6 @@ from music21.midi import translate
 from music21.converter import parse
 from music21.stream import Stream
 from music21.variant import Variant
-from music21.note import Note
-from music21.chord import Chord
 from music21.interval import Interval
 from argparse import ArgumentParser
 from copy import deepcopy
@@ -115,9 +113,8 @@ def generateVariantPartAndVoice(
                 )  # a copy of the note with the appropriate pitch
                 p += 1
             elif generalNoteSubclass.isChord:
-                variantChord = deepcopy(generalNoteSubclass)
-                midiTransposeInterval = intervalBetween(variantChord, newPitch)
-                variantChord.transpose(midiTransposeInterval)
+                midiTransposeInterval = intervalBetween(generalNoteSubclass, newPitch)
+                variantChord = generalNoteSubclass.transpose(midiTransposeInterval)
                 variantVoice.append(variantChord)
                 p += 1
             elif generalNoteSubclass.isRest:
@@ -167,9 +164,9 @@ def getFirstGreaterValue(l: tuple, lorenz0Xs: list):
 
 
 def extractRoot(noteOrChord):
-    if type(noteOrChord) is Note:
+    if noteOrChord.isNote:
         return noteOrChord.pitch
-    if type(noteOrChord) is Chord:
+    if noteOrChord.isChord:
         return noteOrChord.root()
 
 
