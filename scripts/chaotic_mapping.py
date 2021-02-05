@@ -103,12 +103,10 @@ def generateVariantPartAndVoice(
         rootPitches = roots(voice)
         variantVoice = Voice()
         p = 0
-
         for generalNoteSubclass in voice.notesAndRests:
             if p > numberOfPitches - 1:
                 p = 0
             newPitch = rootPitches[variationIndices[p][1]]
-
             if generalNoteSubclass.isNote:
                 variantNote = deepcopy(generalNoteSubclass)
                 variantNote.pitch = newPitch
@@ -135,14 +133,9 @@ def greaterThanFilter(pair):
 def solveIVPAndGenerateVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group):
     # at index j, apply pitch at index i
     chaoticMapIndices = getChaoticMapIndices(ivp0Vars, ivp1Vars)
-    validChaoticMapIndices = list(filter(greaterThanFilter, chaoticMapIndices))
     variant = Variant()
-    generateVariantPartAndVoice(
-        score, variant, 0, validChaoticMapIndices, numberOfPitches
-    )
-    generateVariantPartAndVoice(
-        score, variant, 1, validChaoticMapIndices, numberOfPitches
-    )
+    generateVariantPartAndVoice(score, variant, 0, chaoticMapIndices, numberOfPitches)
+    generateVariantPartAndVoice(score, variant, 1, chaoticMapIndices, numberOfPitches)
     variant.groups = [group]
     score.insert(0.0, variant)
     return score
@@ -167,16 +160,16 @@ def getFirstGreaterValue(l: tuple, lorenz0Xs: list):
     xValues = [x0 for _, x0 in lorenz0Xs]
     index = bisect_right(xValues, x1)
     if index - 1 > 0 and lorenz0Xs[index - 1][1] == x1:
-        return (j, j)
+        return (j, lorenz0Xs[index - 1][0])
     if index < len(lorenz0Xs) - 1:
         return (j, lorenz0Xs[index][0])
     return (j, j)  # Default return no variation
 
 
 def extractRoot(noteOrChord):
-    if noteOrChord is Note:
+    if type(noteOrChord) is Note:
         return noteOrChord.pitch
-    if noteOrChord is Chord:
+    if type(noteOrChord) is Chord:
         return noteOrChord.root()
 
 

@@ -4,7 +4,7 @@ from filecmp import cmp
 from random import sample
 from glob import glob
 from pathlib import Path
-from chaotic_mapping import intervalBetween, roots
+from chaotic_mapping import intervalBetween, roots, extractRoot
 from music21.note import Note
 from music21.chord import Chord
 from music21.pitch import Pitch
@@ -18,10 +18,18 @@ home = str(Path.home())
 
 
 class TestMusic21(TestCase):
+    def test_extract_root(self):
+        note = Note("C#4", type="eighth")
+        extractedPitch = extractRoot(note)
+        print("note.pitch", note.pitch,
+              "extractedPitch.nameWithOctave", extractedPitch.nameWithOctave)
+        self.assertTrue(extractedPitch.nameWithOctave == "C#4")
+
     def test_root_pitches(self):
         v1 = Voice()
         v1.repeatAppend(Note("C#4", type="eighth"), 10)
         rootPitches = roots(v1)
+        print(rootPitches)
         self.assertTrue(len(rootPitches) == 10)
 
     def test_activate_variant_tree(self):
