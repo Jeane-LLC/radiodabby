@@ -1,5 +1,10 @@
 from unittest import TestCase
-from chaotic_mapping import getChaoticMapIndices, solveIVPAndGenerateVariant
+from chaotic_mapping import (
+    getChaoticMapIndices,
+    solveIVPAndGenerateVariant,
+    dabby,
+    writeStreamVariantToMidi,
+)
 from music21.stream import Score, Part, Voice
 from music21.note import Note, Rest
 from music21.chord import Chord
@@ -7,8 +12,10 @@ from music21.chord import Chord
 nullLorenzVars = (1000, 1000, (0.0, 0.0, 0.0), 0.0, 0.0, 0.0)
 lorenz0Vars = (1000, 1000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz1Vars = (1000, 1000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
-lorenz2Vars = (10, 1000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
-lorenz3Vars = (10, 1000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
+lorenz2Vars = (100, 10000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
+lorenz3Vars = (100, 10000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
+lorenz4Vars = (1000, 1000, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz5Vars = (1000, 1000, 0.999, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
 
 
 def greaterThanFilter(pair):
@@ -16,6 +23,18 @@ def greaterThanFilter(pair):
 
 
 class TestChaoticMapping(TestCase):
+    def test_dabby(self):
+        filename = "~/kunstderfuge/satie/satie_gnossienne_1_(c)dery.mid"
+        stream = dabby(
+            filename,
+            lorenz4Vars,
+            lorenz5Vars,
+        )
+        # stream.show("text")
+        variantStream = stream.activateVariants("dabby")
+        # variantStream.show("text")
+        writeStreamVariantToMidi(variantStream, "dabby", filename)
+
     def test_solveIVPAndGenerateMixedVariant(self):
         voice1 = Voice()
         voice2 = Voice()

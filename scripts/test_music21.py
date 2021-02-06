@@ -21,8 +21,12 @@ class TestMusic21(TestCase):
     def test_extract_root(self):
         note = Note("C#4", type="eighth")
         extractedPitch = extractRoot(note)
-        print("note.pitch", note.pitch,
-              "extractedPitch.nameWithOctave", extractedPitch.nameWithOctave)
+        print(
+            "note.pitch",
+            note.pitch,
+            "extractedPitch.nameWithOctave",
+            extractedPitch.nameWithOctave,
+        )
         self.assertTrue(extractedPitch.nameWithOctave == "C#4")
 
     def test_root_pitches(self):
@@ -83,7 +87,7 @@ class TestMusic21(TestCase):
 
     def streamAnalysis(self, midiFilename):
         stream = parse(midiFilename)
-        # stream.show('text')
+        stream.show("text")
         numberOfParts = len(stream.parts)
         numberOfVoices = 0
         for part in stream.parts:

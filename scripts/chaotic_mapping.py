@@ -42,9 +42,17 @@ def openMidiAsStream(filename: str):
 
 
 def writeStreamVariantToMidi(stream: Stream, group: str, filename: str):
+    variantFilename = (
+        homeDir
+        + "/variants/"
+        + split(filename)[1].replace(
+            ".mid",
+            "_dabby" + "_" + datetime.now().strftime("%m%d%Y%H%M%S") + ".mid",
+        )
+    )
     variantStream = stream.activateVariants(group)
     midiFile = translate.streamToMidiFile(variantStream)
-    midiFile.open(filename, "wb")
+    midiFile.open(variantFilename, "wb")
     midiFile.write()
     midiFile.close()
 
@@ -97,6 +105,8 @@ def generateVariantPartAndVoice(
     score, variant, voiceIndex, variationIndices, numberOfPitches
 ):
     for part in score.parts:
+        if len(part.voices) < 1:
+            break
         voice = part.voices[voiceIndex]
         rootPitches = roots(voice)
         variantVoice = Voice()
@@ -139,6 +149,7 @@ def solveIVPAndGenerateVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group
     variant = Variant()
     generateVariantPartAndVoice(score, variant, 0, chaoticMapIndices, numberOfPitches)
     generateVariantPartAndVoice(score, variant, 1, chaoticMapIndices, numberOfPitches)
+    generateVariantPartAndVoice(score, variant, 2, chaoticMapIndices, numberOfPitches)
     variant.groups = [group]
     score.insert(0.0, variant)
     return score
@@ -215,13 +226,6 @@ if __name__ == "__main__":
     if args.filename & args.lorenz0 & args.lorenz1 & args.mapping:
         if args.mapping == "dabby":
             stream = dabby(args.filename, tuple(args.lorenz0), tuple(args.lorenz1))
-            newFilename = (
-                homeDir
-                + "/variants/"
-                + split(args.filename)[1].replace(
-                    ".mid",
-                    "_dabby" + "_" + datetime.now().strftime("%m%d%Y%H%M%S") + ".mid",
-                )
-            )
-            writeStreamVariantToMidi(stream, "dabby", newFilename)
-            print("wrote " + newFilename)
+
+            writeStreamVariantToMidi(stream, "dabby", args.filename)
+            print("wrote variant")
