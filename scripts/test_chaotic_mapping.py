@@ -1,9 +1,9 @@
 from unittest import TestCase
 from chaotic_mapping import (
     getChaoticMapIndices,
-    solveIVPAndGenerateVariant,
+    solveIVPAndOverwriteVariant,
     dabby,
-    writeStreamVariantToMidi,
+    writeStreamToMidi,
 )
 from music21.stream import Score, Part, Voice
 from music21.note import Note, Rest
@@ -14,8 +14,10 @@ lorenz0Vars = (1000, 1000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz1Vars = (1000, 1000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz2Vars = (100, 10000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz3Vars = (100, 10000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
-lorenz4Vars = (1000, 1000, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
-lorenz5Vars = (1000, 1000, 0.999, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz4Vars = (1000, 5000, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz5Vars = (1000, 5000, 2.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz6Vars = (1000, 5000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
+lorenz7Vars = (1000, 5000, (2.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 
 
 def greaterThanFilter(pair):
@@ -24,16 +26,13 @@ def greaterThanFilter(pair):
 
 class TestChaoticMapping(TestCase):
     def test_dabby(self):
-        filename = "~/kunstderfuge/satie/satie_gnossienne_1_(c)dery.mid"
+        filename = "~/kunstderfuge/bartok/bartok_roumanian_folk_dances_3_(c)pajares.mid"
         stream = dabby(
             filename,
             lorenz4Vars,
             lorenz5Vars,
         )
-        # stream.show("text")
-        variantStream = stream.activateVariants("dabby")
-        # variantStream.show("text")
-        writeStreamVariantToMidi(variantStream, "dabby", filename)
+        writeStreamToMidi(stream, filename)
 
     def test_solveIVPAndGenerateMixedVariant(self):
         voice1 = Voice()
@@ -62,10 +61,9 @@ class TestChaoticMapping(TestCase):
             voice2.append(element)
         part = Part([voice1, voice2])
         score = Score([part])
-        solveIVPAndGenerateVariant(lorenz2Vars, lorenz3Vars, 9, score, "test")
         score.show("text")
-        variantScore = score.activateVariants("test")
-        variantScore.show("text")
+        solveIVPAndOverwriteVariant(lorenz2Vars, lorenz3Vars, 9, score, "test")
+        score.show("text")
 
     def test_solveIVPAndGenerateChordVariant(self):
         voice1 = Voice()
@@ -87,10 +85,9 @@ class TestChaoticMapping(TestCase):
             voice2.append(chord)
         part = Part([voice1, voice2])
         score = Score([part])
-        solveIVPAndGenerateVariant(lorenz2Vars, lorenz3Vars, 9, score, "test")
         score.show("text")
-        variantScore = score.activateVariants("test")
-        variantScore.show("text")
+        solveIVPAndOverwriteVariant(lorenz2Vars, lorenz3Vars, 9, score, "test")
+        score.show("text")
 
     def test_solveIVPAndGenerateNoteVariant(self):
         voice1 = Voice()
@@ -102,17 +99,30 @@ class TestChaoticMapping(TestCase):
             voice2.append(Note(string, type="eighth"))
         part = Part([voice1, voice2])
         score = Score([part])
-        solveIVPAndGenerateVariant(lorenz2Vars, lorenz3Vars, 9, score, "test")
         score.show("text")
-        variantScore = score.activateVariants("test")
-        variantScore.show("text")
+        solveIVPAndOverwriteVariant(lorenz2Vars, lorenz3Vars, 9, score, "test")
+        score.show("text")
 
     def test_chaos_map(self):
         chaoticMapIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
         validChaoticMapIndices = list(filter(greaterThanFilter, chaoticMapIndices))
-        print(chaoticMapIndices)
-        print(validChaoticMapIndices)
+        # print(chaoticMapIndices)
+        # print(validChaoticMapIndices)
+        original, variant = zip(*validChaoticMapIndices)
+        variantSet = set(variant)
         print("There are ~" + str(len(validChaoticMapIndices)) + " variation indices")
+        print(
+            "There is "
+            + str(len(validChaoticMapIndices) / float(len(chaoticMapIndices)) * 100)
+            + "% variation"
+        )
+        print(
+            "The variation consists of "
+            + str(len(variantSet))
+            + " out of "
+            + str(len(variant))
+            + " indices"
+        )
         self.assertFalse(len(validChaoticMapIndices) == 0)
 
     def test_null_chaos_map(self):

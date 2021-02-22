@@ -9,18 +9,14 @@ This script takes a MIDI file, applies a chaotic mapping, and produces a new MID
 """
 
 # imports
-from music21.stream import Part
-from music21.stream import Voice
 from bisect import bisect_right
 from scipy.integrate import solve_ivp
 from numpy import linspace
 from music21.midi import translate
 from music21.converter import parse
 from music21.stream import Stream
-from music21.variant import Variant
 from music21.interval import Interval
 from argparse import ArgumentParser
-from copy import deepcopy
 from datetime import datetime
 from os.path import split
 from pathlib import Path
@@ -41,7 +37,7 @@ def openMidiAsStream(filename: str):
     return parse(filename)
 
 
-def writeStreamVariantToMidi(stream: Stream, group: str, filename: str):
+def writeStreamToMidi(stream: Stream, filename: str):
     variantFilename = (
         homeDir
         + "/variants/"
@@ -50,8 +46,7 @@ def writeStreamVariantToMidi(stream: Stream, group: str, filename: str):
             "_dabby" + "_" + datetime.now().strftime("%m%d%Y%H%M%S") + ".mid",
         )
     )
-    variantStream = stream.activateVariants(group)
-    midiFile = translate.streamToMidiFile(variantStream)
+    midiFile = translate.streamToMidiFile(stream)
     midiFile.open(variantFilename, "wb")
     midiFile.write()
     midiFile.close()
@@ -101,15 +96,12 @@ def roots(voice):
     return [extractRoot(noteOrChord) for noteOrChord in voice.notes]
 
 
-def generateVariantPartAndVoice(
-    score, variant, voiceIndex, variationIndices, numberOfPitches
-):
+def overwriteVariantPartAndVoice(score, voiceIndex, variationIndices, numberOfPitches):
     for part in score.parts:
         if len(part.voices) < 1:
             break
         voice = part.voices[voiceIndex]
         rootPitches = roots(voice)
-        variantVoice = Voice()
         p = 0
         for generalNoteSubclass in voice.notesAndRests:
             if p > numberOfPitches - 1:
@@ -120,38 +112,29 @@ def generateVariantPartAndVoice(
             else:
                 variation = False
             if generalNoteSubclass.isNote:
-                variantNote = deepcopy(generalNoteSubclass)
                 if variation:
-                    variantNote.pitch = newPitch
-                variantVoice.append(
-                    variantNote
-                )  # a copy of the note with the appropriate pitch
+                    generalNoteSubclass.pitch = newPitch
                 p += 1
             elif generalNoteSubclass.isChord:
                 midiTransposeInterval = intervalBetween(generalNoteSubclass, newPitch)
                 if variation:
-                    variantChord = generalNoteSubclass.transpose(midiTransposeInterval)
-                variantVoice.append(variantChord)
+                    generalNoteSubclass = generalNoteSubclass.transpose(
+                        midiTransposeInterval
+                    )
                 p += 1
             elif generalNoteSubclass.isRest:
-                variantVoice.append(generalNoteSubclass)
-        variantPart = Part([variantVoice])
-        variant.append(variantPart)
+                pass
 
 
 def greaterThanFilter(pair):
     return pair[0] != pair[1]
 
 
-def solveIVPAndGenerateVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group):
+def solveIVPAndOverwriteVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group):
     # at index j, apply pitch at index i
     chaoticMapIndices = getChaoticMapIndices(ivp0Vars, ivp1Vars)
-    variant = Variant()
-    generateVariantPartAndVoice(score, variant, 0, chaoticMapIndices, numberOfPitches)
-    generateVariantPartAndVoice(score, variant, 1, chaoticMapIndices, numberOfPitches)
-    generateVariantPartAndVoice(score, variant, 2, chaoticMapIndices, numberOfPitches)
-    variant.groups = [group]
-    score.insert(0.0, variant)
+    for i in [0, 1, 2]:
+        overwriteVariantPartAndVoice(score, i, chaoticMapIndices, numberOfPitches)
     return score
 
 
@@ -164,7 +147,7 @@ def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 
     lorenz0Vars = (tmax0, tn0, V0, rho0, sigma0, beta0)
     lorenz1Vars = (tmax1, tn1, V1, rho1, sigma1, beta1)
 
-    return solveIVPAndGenerateVariant(
+    return solveIVPAndOverwriteVariant(
         lorenz0Vars, lorenz1Vars, numberOfPitches, originalStream, "dabby"
     )
 
@@ -227,5 +210,5 @@ if __name__ == "__main__":
         if args.mapping == "dabby":
             stream = dabby(args.filename, tuple(args.lorenz0), tuple(args.lorenz1))
 
-            writeStreamVariantToMidi(stream, "dabby", args.filename)
+            writeStreamToMidi(stream, args.filename)
             print("wrote variant")
