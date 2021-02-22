@@ -12,4 +12,4 @@ pianoteq --preset "Bluethner Model One" --midi $MIDI --wav $WAV
 #rm $WAV
 #cat $M4A >> $M3U
 cat $WAV >> $M3U
-echo "done"
+echo "wrote" $WAV
