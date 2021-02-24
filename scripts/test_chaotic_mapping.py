@@ -4,6 +4,7 @@ from chaotic_mapping import (
     solveIVPAndOverwriteVariant,
     dabby,
     writeStreamToMidi,
+    packIVPVars,
 )
 from music21.stream import Score, Part, Voice
 from music21.note import Note, Rest
@@ -14,10 +15,16 @@ lorenz0Vars = (1000, 1000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz1Vars = (1000, 1000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz2Vars = (100, 10000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz3Vars = (100, 10000, (0.999, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
-lorenz4Vars = (1000, 5000, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
-lorenz5Vars = (1000, 5000, 2.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz4Vars = (5000, 5000, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz5Vars = (5000, 5000, 0.9999, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
 lorenz6Vars = (1000, 5000, (1.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
 lorenz7Vars = (1000, 5000, (2.0, 1.0, 1.0), 28.0, 10.0, 8.0 / 3)
+lorenz8Vars = (200, 200, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz9Vars = (200, 200, 0.999, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz10Vars = (300, 300, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz11Vars = (300, 300, 0.999, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz12Vars = (50, 50, 1.0, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
+lorenz13Vars = (50, 50, 0.999, 1.0, 1.0, 28.0, 10.0, 8.0 / 3)
 
 
 def greaterThanFilter(pair):
@@ -26,13 +33,20 @@ def greaterThanFilter(pair):
 
 class TestChaoticMapping(TestCase):
     def test_dabby(self):
-        filename = "~/kunstderfuge/bartok/bartok_roumanian_folk_dances_3_(c)pajares.mid"
-        stream = dabby(
-            filename,
-            lorenz4Vars,
-            lorenz5Vars,
-        )
-        writeStreamToMidi(stream, filename)
+        filenames = [
+            "~/kunstderfuge/satie/satie_gnossienne_1_(c)dery.mid",
+            "~/kunstderfuge/mozart/piano/sonatas/mozart_piano_sonata_331_(hisamori).mid",
+            "~/kunstderfuge/gershwin/!live!/gershwin_rhapsody_in_blue_(c)oguri.mid",
+            "~/kunstderfuge/bartok/bartok_roumanian_folk_dances_3_(c)pajares.mid",
+            "~/kunstderfuge/vivaldi/vivaldi_4_stagioni_primavera_1_(c)pollen.mid",
+        ]
+        for filename in filenames:
+            stream = dabby(
+                filename,
+                lorenz4Vars,
+                lorenz5Vars,
+            )
+            writeStreamToMidi(stream, filename)
 
     def test_solveIVPAndGenerateMixedVariant(self):
         voice1 = Voice()
@@ -104,7 +118,8 @@ class TestChaoticMapping(TestCase):
         score.show("text")
 
     def test_chaos_map(self):
-        chaoticMapIndices = getChaoticMapIndices(lorenz0Vars, lorenz1Vars)
+        lorenzA, lorenzB = packIVPVars(lorenz12Vars, lorenz13Vars)
+        chaoticMapIndices = getChaoticMapIndices(lorenzA, lorenzB)
         validChaoticMapIndices = list(filter(greaterThanFilter, chaoticMapIndices))
         # print(chaoticMapIndices)
         # print(validChaoticMapIndices)

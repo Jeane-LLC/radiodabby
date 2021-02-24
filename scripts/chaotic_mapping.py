@@ -92,38 +92,28 @@ def intervalBetween(variantChord, newPitch):
     return Interval(variantChord.root().midi - newPitch.midi)
 
 
-def roots(voice):
-    return [extractRoot(noteOrChord) for noteOrChord in voice.notes]
+def roots(stream):
+    return [extractRoot(noteOrChord) for noteOrChord in stream.notes]
 
 
-def overwriteVariantPartAndVoice(score, voiceIndex, variationIndices, numberOfPitches):
+def overwriteScore(score, variationIndices, numberOfPitches):
     for part in score.parts:
-        if len(part.voices) < 1:
-            break
-        voice = part.voices[voiceIndex]
-        rootPitches = roots(voice)
-        p = 0
-        for generalNoteSubclass in voice.notesAndRests:
-            if p > numberOfPitches - 1:
-                p = 0
-            if variationIndices[p][1] < len(rootPitches):
-                newPitch = rootPitches[variationIndices[p][1]]
-                variation = True
-            else:
-                variation = False
-            if generalNoteSubclass.isNote:
-                if variation:
-                    generalNoteSubclass.pitch = newPitch
-                p += 1
-            elif generalNoteSubclass.isChord:
-                midiTransposeInterval = intervalBetween(generalNoteSubclass, newPitch)
-                if variation:
-                    generalNoteSubclass = generalNoteSubclass.transpose(
-                        midiTransposeInterval
-                    )
-                p += 1
-            elif generalNoteSubclass.isRest:
-                pass
+        rootPitches = roots(part.flat)
+        effectiveNumberOfPitches = (
+            len(rootPitches) if numberOfPitches == 0 else numberOfPitches
+        )
+        print("effectiveNumberOfPitches", effectiveNumberOfPitches)
+        setRootPitches = set([pitch.nameWithOctave for pitch in rootPitches])
+        print("set(rootPitches)", setRootPitches, len(setRootPitches))
+        i = 0
+        for noteOrChord in part.flat.notes:
+            newPitch = rootPitches[variationIndices[i][1] % effectiveNumberOfPitches]
+            if noteOrChord.isNote:
+                noteOrChord.pitch = newPitch
+            elif noteOrChord.isChord:
+                midiTransposeInterval = intervalBetween(noteOrChord, newPitch)
+                noteOrChord.transpose(midiTransposeInterval, inPlace=True)
+            i += 1
 
 
 def greaterThanFilter(pair):
@@ -133,20 +123,21 @@ def greaterThanFilter(pair):
 def solveIVPAndOverwriteVariant(ivp0Vars, ivp1Vars, numberOfPitches, score, group):
     # at index j, apply pitch at index i
     chaoticMapIndices = getChaoticMapIndices(ivp0Vars, ivp1Vars)
-    for i in [0, 1, 2]:
-        overwriteVariantPartAndVoice(score, i, chaoticMapIndices, numberOfPitches)
+    overwriteScore(score, chaoticMapIndices, numberOfPitches)
     return score
 
 
-def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
-    tmax0, tn0, x0, y0, z0, rho0, sigma0, beta0 = lorenz0
-    tmax1, tn1, x1, y1, z1, rho1, sigma1, beta1 = lorenz1
+def packIVPVars(ivp0Vars, ivp1Vars):
+    tmax0, tn0, x0, y0, z0, rho0, sigma0, beta0 = ivp0Vars
+    tmax1, tn1, x1, y1, z1, rho1, sigma1, beta1 = ivp1Vars
     V0 = (x0, y0, z0)
     V1 = (x1, y1, z1)
-    originalStream = openMidiAsStream(filename)
-    lorenz0Vars = (tmax0, tn0, V0, rho0, sigma0, beta0)
-    lorenz1Vars = (tmax1, tn1, V1, rho1, sigma1, beta1)
+    return (tmax0, tn0, V0, rho0, sigma0, beta0), (tmax1, tn1, V1, rho1, sigma1, beta1)
 
+
+def dabby(filename: str, lorenz0: tuple, lorenz1: tuple, numberOfPitches: int = 0):
+    lorenz0Vars, lorenz1Vars = packIVPVars(lorenz0, lorenz1)
+    originalStream = openMidiAsStream(filename)
     return solveIVPAndOverwriteVariant(
         lorenz0Vars, lorenz1Vars, numberOfPitches, originalStream, "dabby"
     )
